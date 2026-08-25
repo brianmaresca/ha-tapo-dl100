@@ -1,10 +1,10 @@
-# Tapo DL100 Home Assistant Integration
+# Tapo DL-Series Home Assistant Integration
 
-Custom Home Assistant integration for TP-Link Tapo DL100 locks.
+Custom Home Assistant integration for TP-Link Tapo DL-series locks.
 
 ## Features
 
-- Adds DL100 as a Home Assistant `lock` entity
+- Adds supported DL-series locks as Home Assistant `lock` entities
 - Supports lock and unlock actions
 - Polls lock status and battery information
 - Config flow setup from Home Assistant UI
@@ -16,7 +16,7 @@ Custom Home Assistant integration for TP-Link Tapo DL100 locks.
 3. In Home Assistant, open HACS.
 4. Go to **HACS -> Menu -> Custom repositories**.
 5. Add your repository URL and choose **Integration** as category.
-6. Install **Tapo DL100** from HACS.
+6. Install **Tapo DL-Series** from HACS.
 7. Restart Home Assistant.
 
 ## Manual Installation
@@ -24,7 +24,7 @@ Custom Home Assistant integration for TP-Link Tapo DL100 locks.
 1. Copy `custom_components/tapo_dl100` to your Home Assistant config directory under `custom_components`.
 2. Restart Home Assistant.
 3. Go to **Settings -> Devices & Services -> Add Integration**.
-4. Search for **Tapo DL100**.
+4. Search for **Tapo DL100** (integration domain is `tapo_dl100` for compatibility).
 5. Enter:
    - lock name
    - lock local IP
@@ -33,7 +33,7 @@ Custom Home Assistant integration for TP-Link Tapo DL100 locks.
 
 ## Notes
 
-- If your TP-Link account has multiple DL100 locks, the integration `name` must match the lock alias in the Tapo app exactly.
+- If your TP-Link account has multiple DL-series locks, the integration `name` must match the lock alias in the Tapo app exactly.
 - `lock_status` mapping:
   - `0` = locked
   - `1` = unlocked

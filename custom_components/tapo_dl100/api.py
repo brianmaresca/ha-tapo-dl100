@@ -1,4 +1,4 @@
-"""DLKLAP client for Tapo DL100."""
+"""DLKLAP client for Tapo DL-series locks."""
 
 from __future__ import annotations
 
@@ -80,7 +80,7 @@ def _extract_json(data: bytes) -> Json:
 
 @dataclass
 class DeviceInfo:
-    """DL100 device state."""
+    """DL-series device state."""
 
     lock_status: int
     battery_percentage: int | None
@@ -154,7 +154,7 @@ async def _post(
 
 
 class DlklapApi:
-    """Async client for TP-Link DLKLAP endpoints used by DL100."""
+    """Async client for TP-Link DLKLAP endpoints used by DL-series locks."""
 
     def __init__(
         self,
@@ -251,17 +251,21 @@ class DlklapApi:
         if payload.get("error_code") != 0:
             raise DlklapError(f"getDeviceList failed: {payload}")
         devices = payload.get("result", {}).get("deviceList", [])
-        dl100s = [d for d in devices if "DL100" in d.get("deviceModel", "")]
-        if not dl100s:
-            raise DlklapError("No DL100 devices found on this TP-Link account")
-        if len(dl100s) == 1:
-            self.device_id = dl100s[0]["deviceId"]
+        dl_locks = [
+            d
+            for d in devices
+            if str(d.get("deviceModel", "")).upper().startswith("DL")
+        ]
+        if not dl_locks:
+            raise DlklapError("No DL-series lock devices found on this TP-Link account")
+        if len(dl_locks) == 1:
+            self.device_id = dl_locks[0]["deviceId"]
             return
-        match = next((d for d in dl100s if d.get("alias") == self.lock_name), None)
+        match = next((d for d in dl_locks if d.get("alias") == self.lock_name), None)
         if not match:
-            aliases = ", ".join(d.get("alias", "<unknown>") for d in dl100s)
+            aliases = ", ".join(d.get("alias", "<unknown>") for d in dl_locks)
             raise DlklapError(
-                f"Multiple DL100 devices found ({aliases}). "
+                f"Multiple DL-series lock devices found ({aliases}). "
                 "Set name to match alias in Tapo app exactly."
             )
         self.device_id = match["deviceId"]
