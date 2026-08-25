@@ -1,0 +1,7 @@
+{
+  "name": "Tapo DL100",
+  "content_in_root": false,
+  "domains": ["tapo_dl100"],
+  "homeassistant": "2024.1.0",
+  "render_readme": true
+}
