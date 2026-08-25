@@ -37,3 +37,7 @@ Custom Home Assistant integration for TP-Link Tapo DL100 locks.
 - `lock_status` mapping:
   - `0` = locked
   - `1` = unlocked
+
+## Credits
+
+- This integration is based on reverse-engineering and protocol work from Ted Holtz's Homebridge project: [tedholtz/homebridge-tapo-dl100](https://github.com/tedholtz/homebridge-tapo-dl100).
