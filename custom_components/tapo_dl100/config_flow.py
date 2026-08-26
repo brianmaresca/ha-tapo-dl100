@@ -85,6 +85,12 @@ class TapoDl100OptionsFlow(config_entries.OptionsFlow):
     def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
         self._config_entry = config_entry
 
+    def _current_value(self, key: str, default: Any = "") -> Any:
+        """Return current editable value, preferring options over data."""
+        if key in self._config_entry.options:
+            return self._config_entry.options[key]
+        return self._config_entry.data.get(key, default)
+
     async def async_step_init(self, user_input: dict[str, Any] | None = None) -> FlowResult:
         """Manage the options form."""
         errors: dict[str, str] = {}
@@ -124,39 +130,42 @@ class TapoDl100OptionsFlow(config_entries.OptionsFlow):
                 if changed:
                     new_data.pop("terminal_uuid", None)
                     new_data.pop("device_id", None)
+                new_options = {
+                    **self._config_entry.options,
+                    CONF_NAME: user_input[CONF_NAME],
+                    CONF_IP: user_input[CONF_IP],
+                    CONF_CLOUD_USERNAME: user_input[CONF_CLOUD_USERNAME],
+                    CONF_CLOUD_PASSWORD: user_input[CONF_CLOUD_PASSWORD],
+                    CONF_POLL_SECONDS: user_input[CONF_POLL_SECONDS],
+                }
                 self.hass.config_entries.async_update_entry(
                     self._config_entry,
                     title=user_input[CONF_NAME],
                     data=new_data,
-                    options={
-                        **self._config_entry.options,
-                        CONF_POLL_SECONDS: user_input[CONF_POLL_SECONDS],
-                    },
+                    options=new_options,
                 )
+                await self.hass.config_entries.async_reload(self._config_entry.entry_id)
                 return self.async_create_entry(title="", data={})
 
         schema = vol.Schema(
             {
                 vol.Required(
-                    CONF_NAME, default=self._config_entry.data.get(CONF_NAME, "")
+                    CONF_NAME, default=self._current_value(CONF_NAME)
                 ): str,
                 vol.Required(
-                    CONF_IP, default=self._config_entry.data.get(CONF_IP, "")
+                    CONF_IP, default=self._current_value(CONF_IP)
                 ): str,
                 vol.Required(
                     CONF_CLOUD_USERNAME,
-                    default=self._config_entry.data.get(CONF_CLOUD_USERNAME, ""),
+                    default=self._current_value(CONF_CLOUD_USERNAME),
                 ): str,
                 vol.Required(
                     CONF_CLOUD_PASSWORD,
-                    default=self._config_entry.data.get(CONF_CLOUD_PASSWORD, ""),
+                    default=self._current_value(CONF_CLOUD_PASSWORD),
                 ): str,
                 vol.Optional(
                     CONF_POLL_SECONDS,
-                    default=self._config_entry.options.get(
-                        CONF_POLL_SECONDS,
-                        self._config_entry.data.get(CONF_POLL_SECONDS, DEFAULT_POLL_SECONDS),
-                    ),
+                    default=self._current_value(CONF_POLL_SECONDS, DEFAULT_POLL_SECONDS),
                 ): vol.All(vol.Coerce(int), vol.Range(min=5, max=3600)),
             }
         )

@@ -25,3 +25,4 @@ env/
 
 # Ignore only root Homebridge folder
 /homebridge/
+/tools

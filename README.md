@@ -5,6 +5,7 @@ Custom Home Assistant integration for TP-Link Tapo DL-series locks.
 ## Features
 
 - Adds supported DL-series locks as Home Assistant `lock` entities
+- Adds a battery `sensor` entity for battery percentage
 - Supports lock and unlock actions
 - Polls lock status and battery information
 - Config flow setup from Home Assistant UI

@@ -26,12 +26,13 @@ _LOGGER = logging.getLogger(__name__)
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up Tapo DL100 from a config entry."""
+    cfg = {**entry.data, **entry.options}
     session = async_get_clientsession(hass)
     api = DlklapApi(
-        ip=entry.data[CONF_IP],
-        cloud_username=entry.data[CONF_CLOUD_USERNAME],
-        cloud_password=entry.data[CONF_CLOUD_PASSWORD],
-        lock_name=entry.data[CONF_NAME],
+        ip=cfg[CONF_IP],
+        cloud_username=cfg[CONF_CLOUD_USERNAME],
+        cloud_password=cfg[CONF_CLOUD_PASSWORD],
+        lock_name=cfg[CONF_NAME],
         websession=session,
         logger=_LOGGER,
         terminal_uuid=entry.data.get("terminal_uuid"),
