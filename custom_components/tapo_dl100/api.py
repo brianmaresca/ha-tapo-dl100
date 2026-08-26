@@ -8,6 +8,7 @@ import json
 import logging
 import os
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from typing import Any
 from uuid import uuid4
 
@@ -180,6 +181,8 @@ class DlklapApi:
         self._account_id: str | None = None
         self._session: _Session | None = None
         self._lock = asyncio.Lock()
+        self.last_connect_error: str | None = None
+        self.last_success_at: str | None = None
 
     async def get_device_info(self) -> DeviceInfo:
         async def _do_call(session: _Session) -> DeviceInfo:
@@ -231,23 +234,22 @@ class DlklapApi:
     async def _with_session(self, fn):
         async with self._lock:
             last_err: Exception | None = None
-            for attempt in range(3):
+            for attempt in range(2):
                 try:
                     await self._ensure_identifiers()
                     if self._session is None:
                         self._session = await self._handshake()
                         self.log.debug("New DLKLAP session established.")
-                    return await fn(self._session)
+                    result = await fn(self._session)
+                    self.last_connect_error = None
+                    self.last_success_at = (
+                        datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+                    )
+                    return result
                 except Exception as err:  # noqa: BLE001
                     last_err = err
+                    self.last_connect_error = str(err)
                     self.log.warning("Session attempt %s failed: %s", attempt + 1, err)
-
-                    # In low-power states the lock may briefly reject a command
-                    # while the existing local session is still usable.
-                    # Retry once with the same session before forcing re-handshake.
-                    if self._session is not None and attempt == 0:
-                        await asyncio.sleep(0.5)
-                        continue
 
                     self._session = None
                     err_text = str(err).lower()

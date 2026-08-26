@@ -61,6 +61,13 @@ class Dl100LockEntity(CoordinatorEntity[Dl100Coordinator], LockEntity):
             "at_low_battery": info.at_low_battery,
             "battery_percentage": info.battery_percentage,
         }
+        attrs["connectivity"] = (
+            "online" if self.coordinator.last_update_success else "offline"
+        )
+        if self.coordinator.api.last_connect_error:
+            attrs["last_connect_error"] = self.coordinator.api.last_connect_error
+        if self.coordinator.api.last_success_at:
+            attrs["last_success_at"] = self.coordinator.api.last_success_at
         if "rssi" in info.raw:
             attrs["rssi"] = info.raw["rssi"]
         if "wifi_mode_status" in info.raw:

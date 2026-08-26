@@ -56,5 +56,24 @@ class Dl100BatterySensor(CoordinatorEntity[Dl100Coordinator], SensorEntity):
     def extra_state_attributes(self) -> dict[str, object]:
         info: DeviceInfo | None = self.coordinator.data
         if info is None:
-            return {}
-        return {"at_low_battery": info.at_low_battery}
+            attrs: dict[str, object] = {
+                "connectivity": (
+                    "online" if self.coordinator.last_update_success else "offline"
+                )
+            }
+            if self.coordinator.api.last_connect_error:
+                attrs["last_connect_error"] = self.coordinator.api.last_connect_error
+            if self.coordinator.api.last_success_at:
+                attrs["last_success_at"] = self.coordinator.api.last_success_at
+            return attrs
+        attrs = {
+            "at_low_battery": info.at_low_battery,
+            "connectivity": (
+                "online" if self.coordinator.last_update_success else "offline"
+            ),
+        }
+        if self.coordinator.api.last_connect_error:
+            attrs["last_connect_error"] = self.coordinator.api.last_connect_error
+        if self.coordinator.api.last_success_at:
+            attrs["last_success_at"] = self.coordinator.api.last_success_at
+        return attrs
