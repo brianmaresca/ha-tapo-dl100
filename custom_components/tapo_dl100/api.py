@@ -196,12 +196,13 @@ class DlklapApi:
 
     async def set_lock(self, locked: bool) -> None:
         async def _do_call(session: _Session) -> None:
+            target_status = 0 if locked else 1
             response = await session.call(
                 [
                     {
                         "method": "setLockStatus",
                         "params": {
-                            "lock_status": 0 if locked else 1,
+                            "lock_status": target_status,
                             "sa_user_id": "local_1",
                         },
                     }
@@ -210,6 +211,20 @@ class DlklapApi:
             resp = response.get("result", {}).get("responses", [{}])[0]
             if resp.get("error_code") != 0:
                 raise DlklapError(f"setLockStatus failed: {response}")
+
+            # Some battery-saving states can acknowledge the command before
+            # the lock actually applies it. Verify final status explicitly.
+            for _ in range(3):
+                verify = await session.call([{"method": "getDeviceInfo"}])
+                info = verify["result"]["responses"][0]["result"]
+                if info.get("lock_status") == target_status:
+                    return
+                await asyncio.sleep(0.5)
+
+            raise DlklapError(
+                f"Lock state verification failed: expected {target_status}, "
+                f"got {info.get('lock_status')}"
+            )
 
         await self._with_session(_do_call)
 

@@ -66,9 +66,13 @@ class Dl100LockEntity(CoordinatorEntity[Dl100Coordinator], LockEntity):
         return attrs
 
     async def async_lock(self, **kwargs) -> None:
-        await self.coordinator.api.set_lock(True)
-        await self.coordinator.async_request_refresh()
+        try:
+            await self.coordinator.api.set_lock(True)
+        finally:
+            await self.coordinator.async_request_refresh()
 
     async def async_unlock(self, **kwargs) -> None:
-        await self.coordinator.api.set_lock(False)
-        await self.coordinator.async_request_refresh()
+        try:
+            await self.coordinator.api.set_lock(False)
+        finally:
+            await self.coordinator.async_request_refresh()
