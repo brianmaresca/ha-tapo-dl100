@@ -231,7 +231,7 @@ class DlklapApi:
     async def _with_session(self, fn):
         async with self._lock:
             last_err: Exception | None = None
-            for attempt in range(2):
+            for attempt in range(3):
                 try:
                     await self._ensure_identifiers()
                     if self._session is None:
@@ -240,9 +240,24 @@ class DlklapApi:
                     return await fn(self._session)
                 except Exception as err:  # noqa: BLE001
                     last_err = err
-                    self._session = None
-                    self._token = None
                     self.log.warning("Session attempt %s failed: %s", attempt + 1, err)
+
+                    # In low-power states the lock may briefly reject a command
+                    # while the existing local session is still usable.
+                    # Retry once with the same session before forcing re-handshake.
+                    if self._session is not None and attempt == 0:
+                        await asyncio.sleep(0.5)
+                        continue
+
+                    self._session = None
+                    err_text = str(err).lower()
+                    if (
+                        "login" in err_text
+                        or "token" in err_text
+                        or "control-key" in err_text
+                        or "10000" in err_text
+                    ):
+                        self._token = None
                     await asyncio.sleep(0.5)
             raise DlklapError(f"Session retries exhausted: {last_err}") from last_err
 

@@ -63,6 +63,8 @@ class Dl100LockEntity(CoordinatorEntity[Dl100Coordinator], LockEntity):
         }
         if "rssi" in info.raw:
             attrs["rssi"] = info.raw["rssi"]
+        if "wifi_mode_status" in info.raw:
+            attrs["wifi_mode_status"] = info.raw["wifi_mode_status"]
         return attrs
 
     async def async_lock(self, **kwargs) -> None:
