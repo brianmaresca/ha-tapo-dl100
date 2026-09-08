@@ -1,0 +1,41 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "data": {
+          "name": "Lock name",
+          "ip": "IP address",
+          "cloud_username": "Cloud username",
+          "cloud_password": "Cloud password",
+          "ssl_verify": "Enable SSL verification",
+          "poll_seconds": "Poll interval (seconds)"
+        },
+        "data_description": {
+          "ssl_verify": "This is for testing purposes. If unsure, leave unchecked."
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "Invalid authentication",
+      "cannot_connect": "Cannot connect",
+      "unknown": "Unexpected error"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "data": {
+          "name": "Lock name",
+          "ip": "IP address",
+          "cloud_username": "Cloud username",
+          "cloud_password": "Cloud password",
+          "ssl_verify": "Enable SSL verification",
+          "poll_seconds": "Poll interval (seconds)"
+        },
+        "data_description": {
+          "ssl_verify": "This is for testing purposes. If unsure, leave unchecked."
+        }
+      }
+    }
+  }
+}

@@ -17,7 +17,9 @@ from .const import (
     CONF_CLOUD_USERNAME,
     CONF_IP,
     CONF_POLL_SECONDS,
+    CONF_SSL_VERIFY,
     DEFAULT_POLL_SECONDS,
+    DEFAULT_SSL_VERIFY,
     DOMAIN,
 )
 
@@ -49,6 +51,7 @@ class TapoDl100ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     cloud_username=user_input[CONF_CLOUD_USERNAME],
                     cloud_password=user_input[CONF_CLOUD_PASSWORD],
                     lock_name=user_input[CONF_NAME],
+                    ssl_verify=user_input.get(CONF_SSL_VERIFY, DEFAULT_SSL_VERIFY),
                     websession=session,
                     logger=_LOGGER,
                 )
@@ -71,6 +74,7 @@ class TapoDl100ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 vol.Required(CONF_IP): str,
                 vol.Required(CONF_CLOUD_USERNAME): str,
                 vol.Required(CONF_CLOUD_PASSWORD): str,
+                vol.Optional(CONF_SSL_VERIFY, default=DEFAULT_SSL_VERIFY): bool,
                 vol.Optional(CONF_POLL_SECONDS, default=DEFAULT_POLL_SECONDS): vol.All(
                     vol.Coerce(int), vol.Range(min=5, max=3600)
                 ),
@@ -100,6 +104,7 @@ class TapoDl100OptionsFlow(config_entries.OptionsFlow):
                     cloud_username=user_input[CONF_CLOUD_USERNAME],
                     cloud_password=user_input[CONF_CLOUD_PASSWORD],
                     lock_name=user_input[CONF_NAME],
+                    ssl_verify=user_input.get(CONF_SSL_VERIFY, DEFAULT_SSL_VERIFY),
                     websession=session,
                     logger=_LOGGER,
                     terminal_uuid=self._config_entry.data.get("terminal_uuid"),
@@ -115,8 +120,19 @@ class TapoDl100OptionsFlow(config_entries.OptionsFlow):
             else:
                 old = self._config_entry.data
                 changed = any(
-                    old.get(key) != user_input[key]
-                    for key in (CONF_NAME, CONF_IP, CONF_CLOUD_USERNAME, CONF_CLOUD_PASSWORD)
+                    old.get(key)
+                    != (
+                        user_input.get(CONF_SSL_VERIFY, DEFAULT_SSL_VERIFY)
+                        if key == CONF_SSL_VERIFY
+                        else user_input[key]
+                    )
+                    for key in (
+                        CONF_NAME,
+                        CONF_IP,
+                        CONF_CLOUD_USERNAME,
+                        CONF_CLOUD_PASSWORD,
+                        CONF_SSL_VERIFY,
+                    )
                 )
                 new_data = {
                     **old,
@@ -124,6 +140,7 @@ class TapoDl100OptionsFlow(config_entries.OptionsFlow):
                     CONF_IP: user_input[CONF_IP],
                     CONF_CLOUD_USERNAME: user_input[CONF_CLOUD_USERNAME],
                     CONF_CLOUD_PASSWORD: user_input[CONF_CLOUD_PASSWORD],
+                    CONF_SSL_VERIFY: user_input.get(CONF_SSL_VERIFY, DEFAULT_SSL_VERIFY),
                 }
                 if changed:
                     new_data.pop("terminal_uuid", None)
@@ -154,6 +171,10 @@ class TapoDl100OptionsFlow(config_entries.OptionsFlow):
                     CONF_CLOUD_PASSWORD,
                     default=self._current_value(CONF_CLOUD_PASSWORD),
                 ): str,
+                vol.Optional(
+                    CONF_SSL_VERIFY,
+                    default=self._current_value(CONF_SSL_VERIFY, DEFAULT_SSL_VERIFY),
+                ): bool,
                 vol.Optional(
                     CONF_POLL_SECONDS,
                     default=self._config_entry.options.get(

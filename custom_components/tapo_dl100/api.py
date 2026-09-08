@@ -163,6 +163,7 @@ class DlklapApi:
         cloud_username: str,
         cloud_password: str,
         lock_name: str,
+        ssl_verify: bool,
         websession: aiohttp.ClientSession,
         logger: logging.Logger,
         terminal_uuid: str | None = None,
@@ -172,6 +173,7 @@ class DlklapApi:
         self.cloud_username = cloud_username
         self.cloud_password = cloud_password
         self.lock_name = lock_name
+        self.ssl_verify = ssl_verify
         self.websession = websession
         self.log = logger
 
@@ -183,6 +185,38 @@ class DlklapApi:
         self._lock = asyncio.Lock()
         self.last_connect_error: str | None = None
         self.last_success_at: str | None = None
+
+    def _hint_for_error(self, err: Exception) -> str:
+        """Return actionable hint for known connection/auth/SSL failures."""
+        err_text = str(err).lower()
+        if isinstance(
+            err,
+            (
+                aiohttp.ClientConnectorSSLError,
+                aiohttp.ClientConnectorCertificateError,
+                aiohttp.ClientSSLError,
+            ),
+        ) or "ssl" in err_text:
+            return (
+                "SSL verification failed. Toggle the integration's ssl_verify option "
+                "(False to allow insecure certificates, True for strict validation)."
+            )
+        if isinstance(err, (aiohttp.ClientConnectionError, asyncio.TimeoutError)):
+            return (
+                "Network request failed. Check internet/local connectivity, IP address, "
+                "and whether the lock/device is reachable."
+            )
+        if isinstance(err, DlklapAuthError) or any(
+            token in err_text for token in ("login", "token", "control-key", "10000", "auth")
+        ):
+            return (
+                "Authentication failed. Verify cloud username/password, then reload "
+                "the integration to refresh token and identifiers."
+            )
+        return (
+            "Unexpected service failure. Enable debug logs for this integration and "
+            "check Home Assistant logs for the full traceback."
+        )
 
     async def get_device_info(self) -> DeviceInfo:
         async def _do_call(session: _Session) -> DeviceInfo:
@@ -250,6 +284,7 @@ class DlklapApi:
                     last_err = err
                     self.last_connect_error = str(err)
                     self.log.warning("Session attempt %s failed: %s", attempt + 1, err)
+                    self.log.error("Tapo DL100 connection hint: %s", self._hint_for_error(err))
 
                     self._session = None
                     err_text = str(err).lower()
@@ -276,6 +311,7 @@ class DlklapApi:
             f"https://wap.tplinkcloud.com/?token={self._token}",
             headers={"Content-Type": "application/json"},
             body=json.dumps({"method": "getDeviceList"}),
+            ssl=self.ssl_verify,
         )
         if status != 200:
             raise DlklapError(f"getDeviceList HTTP {status}")
@@ -288,7 +324,18 @@ class DlklapApi:
             for d in devices
             if str(d.get("deviceModel", "")).upper().startswith("DL")
         ]
+        found_aliases = [str(d.get("alias") or "<unknown>") for d in dl_locks]
+        self.log.debug(
+            "DL device discovery: requested lock alias='%s', found %s DL devices: %s",
+            self.lock_name,
+            len(dl_locks),
+            found_aliases,
+        )
         if not dl_locks:
+            self.log.error(
+                "No DL-series devices found on account after successful login. "
+                "Verify this TP-Link account owns at least one DL lock in the Tapo app."
+            )
             raise DlklapError("No DL-series lock devices found on this TP-Link account")
         if len(dl_locks) == 1:
             self.device_id = dl_locks[0]["deviceId"]
@@ -296,6 +343,12 @@ class DlklapApi:
         match = next((d for d in dl_locks if d.get("alias") == self.lock_name), None)
         if not match:
             aliases = ", ".join(d.get("alias", "<unknown>") for d in dl_locks)
+            self.log.error(
+                "Lock alias mismatch: configured name='%s', available DL aliases=[%s]. "
+                "Update integration name to match the Tapo app alias exactly.",
+                self.lock_name,
+                aliases,
+            )
             raise DlklapError(
                 f"Multiple DL-series lock devices found ({aliases}). "
                 "Set name to match alias in Tapo app exactly."
@@ -322,6 +375,7 @@ class DlklapApi:
             "https://wap.tplinkcloud.com/",
             headers={"Content-Type": "application/json"},
             body=json.dumps(body),
+            ssl=self.ssl_verify,
         )
         if status != 200:
             raise DlklapAuthError(f"login HTTP {status}")
@@ -330,6 +384,7 @@ class DlklapApi:
             raise DlklapAuthError(f"login failed: {payload}")
         self._token = payload["result"]["token"]
         self._account_id = str(payload["result"]["accountId"])
+        self.log.debug("TP-Link cloud login succeeded for '%s'.", self.cloud_username)
 
     async def _handshake(self) -> _Session:
         if not self._account_id:
@@ -372,7 +427,7 @@ class DlklapApi:
                 body=json.dumps(
                     {"secret": secret, "random": random4.hex().upper()}
                 ),
-                ssl=False,
+                ssl=self.ssl_verify,
             )
             if ck_status != 200:
                 raise DlklapError(f"control-key HTTP {ck_status}")
