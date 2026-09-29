@@ -7,11 +7,7 @@
           "ip": "IP address",
           "cloud_username": "Cloud username",
           "cloud_password": "Cloud password",
-          "ssl_verify": "Enable SSL verification",
           "poll_seconds": "Poll interval (seconds)"
-        },
-        "data_description": {
-          "ssl_verify": "This is for testing purposes. If unsure, leave unchecked."
         }
       }
     },
@@ -29,11 +25,23 @@
           "ip": "IP address",
           "cloud_username": "Cloud username",
           "cloud_password": "Cloud password",
-          "ssl_verify": "Enable SSL verification",
           "poll_seconds": "Poll interval (seconds)"
+        }
+      }
+    }
+  },
+  "services": {
+    "probe_methods": {
+      "name": "Probe lock methods",
+      "description": "Calls a list of local DLKLAP methods on the lock and returns the raw responses. Use it to discover whether the lock exposes an event-log method.",
+      "fields": {
+        "entry_id": {
+          "name": "Lock",
+          "description": "Config entry of the lock to probe. Probes all loaded locks if omitted."
         },
-        "data_description": {
-          "ssl_verify": "This is for testing purposes. If unsure, leave unchecked."
+        "methods": {
+          "name": "Methods",
+          "description": "Method names to call. Defaults to known methods plus candidate event-log methods."
         }
       }
     }

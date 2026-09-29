@@ -7,7 +7,11 @@ CONF_IP = "ip"
 CONF_CLOUD_USERNAME = "cloud_username"
 CONF_CLOUD_PASSWORD = "cloud_password"
 CONF_POLL_SECONDS = "poll_seconds"
-CONF_SSL_VERIFY = "ssl_verify"
+
+EVENT_LOCK_CHANGED = "tapo_dl100_lock_event"
+SOURCE_HOME_ASSISTANT = "home_assistant"
+SOURCE_EXTERNAL = "external"
+
+SERVICE_PROBE_METHODS = "probe_methods"
 
 DEFAULT_POLL_SECONDS = 300
-DEFAULT_SSL_VERIFY = False

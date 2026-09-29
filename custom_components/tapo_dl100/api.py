@@ -198,8 +198,8 @@ class DlklapApi:
             ),
         ) or "ssl" in err_text:
             return (
-                "SSL verification failed. Toggle the integration's ssl_verify option "
-                "(False to allow insecure certificates, True for strict validation)."
+                "SSL handshake failed while contacting TP-Link cloud endpoints. "
+                "Check outbound network filtering, DNS, and TLS interception."
             )
         if isinstance(err, (aiohttp.ClientConnectionError, asyncio.TimeoutError)):
             return (
@@ -264,6 +264,27 @@ class DlklapApi:
             )
 
         await self._with_session(_do_call)
+
+    async def call_methods(self, methods: list[str], batch_size: int = 4) -> dict[str, Json]:
+        """Call arbitrary methods and return each raw response, including errors."""
+
+        async def _do_call(session: _Session) -> dict[str, Json]:
+            results: dict[str, Json] = {}
+            for start in range(0, len(methods), batch_size):
+                batch = methods[start : start + batch_size]
+                response = await session.call([{"method": m} for m in batch])
+                responses = response.get("result", {}).get("responses")
+                if not isinstance(responses, list):
+                    for method in batch:
+                        results[method] = {"batch_response": response}
+                    continue
+                for method, resp in zip(batch, responses):
+                    results[method] = resp
+                for method in batch[len(responses) :]:
+                    results[method] = {"error": "no response returned"}
+            return results
+
+        return await self._with_session(_do_call)
 
     async def _with_session(self, fn):
         async with self._lock:
